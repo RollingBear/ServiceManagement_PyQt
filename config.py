@@ -12,7 +12,7 @@ usage mode:
         name = config('ini configuration file address')
         message = name.get('section').key
 
-FINAL EDIT TIME: 2019/03/18 17:31
+FINAL EDIT TIME: 2019/03/19 12:41
 FINAL EDITOR: RollingBear
 '''
 
@@ -71,28 +71,31 @@ class config(object):
         self.config_file_address = config_file_address
 
         try:
-            current_dir = os.path.dirname(__file__)
-            file_name = current_dir + self.config_file_address
-            # top_one_dir = os.path.dirname(current_dir)
-            # file_name = top_one_dir + self.config_file_address
+            self.current_dir = os.path.dirname(__file__)
+            self.file_name = self.current_dir + self.config_file_address
+            # self.top_one_dir = os.path.dirname(self.current_dir)
+            # self.file_name = self.top_one_dir + self.config_file_address
         except Exception:
             logging.info(traceback.format_exc())
 
         '''instantiation the config parse object'''
         try:
             self.config = configparser.ConfigParser()
-            self.config.read(file_name, encoding="utf-8-sig")
+            self.config.read(self.file_name, encoding="utf-8-sig")
         except Exception:
             logging.info(traceback.format_exc())
 
         '''with section write the key and the value into dictionary'''
         for section in self.config.sections():
-            setattr(self, section, Dictionary())
-            for keyname, value in self.config.items(section):
-                try:
-                    setattr(getattr(self, section), keyname, value)
-                except Exception:
-                    logging.info(traceback.format_exc())
+            try:
+                setattr(self, section, Dictionary())
+                for keyname, value in self.config.items(section):
+                    try:
+                        setattr(getattr(self, section), keyname, value)
+                    except Exception:
+                        logging.info(traceback.format_exc())
+            except Exception:
+                logging.info(traceback.format_exc())
 
     def get(self, section):
         '''
@@ -106,3 +109,16 @@ class config(object):
         except AttributeError as e:
             logging.info(traceback.format_exc())
             raise OperationalError('Option %s is not found in configuration, error: %s' % (section, e))
+
+    def outer_element_count(self):
+        '''
+        dictionary outer element statistics
+        :return: the count of ini label
+        '''
+        conf = configparser.ConfigParser()
+        conf.read(self.config_file_address[1:], encoding='utf-8')
+        dic = dict(conf._sections)
+        for i in dic:
+            dic[i] = dict(dic[i])
+
+        return len(dic)
