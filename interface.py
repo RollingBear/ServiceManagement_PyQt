@@ -5,11 +5,13 @@
 __author__ = 'RollingBear'
 
 import config
+import image
+import system_service
 
 import os
 
 from PyQt5.QtWidgets import QWidget, QMainWindow
-from PyQt5.QtWidgets import QDesktopWidget, QMessageBox, QToolButton, QMenu, QAction, QGridLayout
+from PyQt5.QtWidgets import QDesktopWidget, QMessageBox, QToolButton, QMenu, QAction, QGridLayout, QLabel
 from PyQt5.QtCore import Qt
 
 
@@ -45,6 +47,8 @@ class service_manamgement(QWidget):
                     '.' * service_setup.count('..\\'))) + '\\' + service_setup.replace('..\\', '')
 
             self.paint_tool_button(i, service_display_name, service_name, service_log, service_setup)
+
+            self.get_state(i, service_name)
 
         self.center()
         self.setWindowTitle('Service Management')
@@ -120,9 +124,20 @@ class service_manamgement(QWidget):
             elif action == 'uninstall':
                 print(action, mes)
 
-    def paint_status(self, row, service_name):
+    def get_state(self, row, service_name):
 
-        pass
+        state = system_service.system_service().get_service_state(service_name)
+        mes = ''
+
+        if state == 'active':
+            mes = '已启动'
+        elif state == 'inactive':
+            mes = '未启动'
+        elif state == 'uninstalled':
+            mes = '未安装'
+
+        self.state_label = QLabel(mes, self)
+        self.grid.addWidget(self.state_label, row, 2)
 
     def center(self):
         geomotry = self.frameGeometry()
