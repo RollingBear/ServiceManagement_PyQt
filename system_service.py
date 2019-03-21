@@ -10,6 +10,9 @@ import time
 
 class system_service():
 
+    def __init__(self):
+        pass
+
     def get_service_state(self, service_name):
 
         '''
@@ -27,15 +30,16 @@ class system_service():
         elif '1060' in result:
             return 'uninstalled'
 
-    def start_service(self, service_name):
+    def service_state_operate(self, service_name, state):
 
         '''
-        start an installed service with a cmd command
+        start or stop an installed service with a cmd command
         :param service_name: service's name
-        :return: service started result
+        :param state: start or stop, used to control function start or stop the service
+        :return: service start or stop result
         '''
 
-        result = os.popen('sc start ' + service_name).read()
+        result = os.popen('sc ' + state + ' ' + service_name).read()
 
         if '1058' in result:
             return 'error'
@@ -43,26 +47,9 @@ class system_service():
             return 'uninstalled'
         elif '1056' in result:
             return 'active'
-        elif 'START_PENDING' in result:
-            return 'success'
-
-    def stop_service(self, service_name):
-
-        '''
-        stop an installed service with a cmd command
-        :param service_name: service's name
-        :return: service stop result
-        '''
-
-        result = os.popen('sc stop ' + service_name).read()
-
-        if '1058' in result:
-            return 'error'
-        elif '1060' in result:
-            return 'uninstalled'
         elif '1062' in result:
             return 'inactive'
-        elif 'STOP_PENDING' in result:
+        elif 'START_PENDING' in result or 'STOP_PENDING' in result:
             return 'success'
 
     def restart_service(self, service_name):
@@ -95,6 +82,7 @@ class system_service():
         '''
 
         os.popen('sc config ' + service_name + 'state= ' + state)
+        return None
 
     def delete_service(self, service_name):
 
@@ -125,6 +113,7 @@ class system_service():
         '''
 
         os.system('notepad ' + service_log)
+        return None
 
     # wait to rewrite
     def open_file(self, log_file_address):
@@ -136,6 +125,7 @@ class system_service():
         '''
 
         os.popen('start ' + os.path.abspath(log_file_address))
+        return None
 
     def open_setup(self, service_name, service_setup):
 
@@ -147,3 +137,4 @@ class system_service():
         '''
 
         os.popen('sc create ' + service_name + ' binPath= ' + service_setup)
+        return None
