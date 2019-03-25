@@ -8,8 +8,9 @@ import config
 import system_service
 
 import os
+import time
 
-from PyQt5.QtWidgets import QWidget, QMainWindow
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QDesktopWidget, QMessageBox, QPushButton, QToolButton, QMenu, QAction, QGridLayout, QLabel
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
@@ -22,6 +23,8 @@ class service_manamgement(QWidget):
 
         self.conf = config.config('\\config\\config.ini')
         self.service_list = config.config('\\config\\service_name.ini')
+
+        self.len_count = self.service_list.outer_element_count()
 
         self.red_img = QPixmap(self.conf.get('image_address').red)
         self.green_img = QPixmap(self.conf.get('image_address').green)
@@ -39,7 +42,7 @@ class service_manamgement(QWidget):
         self.setLayout(self.grid)
         self.grid.setSpacing(10)
 
-        for i in range(self.service_list.outer_element_count()):
+        for i in range(self.len_count):
             service_display_name = self.service_list.get('service_' + str(i + 1)).service_display_name
             service_name = self.service_list.get('service_' + str(i + 1)).service_name
             service_log = self.service_list.get('service_' + str(i + 1)).service_log
@@ -58,22 +61,14 @@ class service_manamgement(QWidget):
 
             self.get_state(i, service_name)
 
+        self.mes_label = QLabel(self)
+        self.mes_label.setPixmap(self.message_img)
+        self.grid.addWidget(self.mes_label, self.len_count + 1, 0, 1, 3)
+
         log_address = self.conf.get('file_address').log_file_address
-        self.paint_button('open file',
-                          self.service_list.outer_element_count() + 1,
-                          0,
-                          self.system_svc.open_file,
-                          log_address)
-        self.paint_button('start all',
-                          self.service_list.outer_element_count() + 1,
-                          1,
-                          self.state_operate,
-                          'start')
-        self.paint_button('stop all',
-                          self.service_list.outer_element_count() + 1,
-                          2,
-                          self.state_operate,
-                          'stop')
+        self.paint_button('open file', self.len_count + 2, 0, self.system_svc.open_file, log_address)
+        self.paint_button('start all', self.len_count + 2, 1, self.state_operate, 'start')
+        self.paint_button('stop all', self.len_count + 2, 2, self.state_operate, 'stop')
 
         self.center()
         self.setWindowTitle('Service Management')
@@ -117,22 +112,34 @@ class service_manamgement(QWidget):
 
         self.tool_button.setMenu(tb_menu)
 
-        start_service.triggered.connect(lambda: on_click('start', service_name))
-        stop_service.triggered.connect(lambda: on_click('stop', service_name))
-        restart_service.triggered.connect(lambda: on_click('restart', service_name))
-        service_log.triggered.connect(lambda: on_click('log', service_log_address))
-        service_start_auto.triggered.connect(lambda: on_click('auto_start', service_name))
-        service_start_demand.triggered.connect(lambda: on_click('auto_demand', service_name))
-        service_disable.triggered.connect(lambda: on_click('disable', service_name))
-        service_setup.triggered.connect(lambda: on_click('setup', service_setup_address, service_name))
-        service_delete.triggered.connect(lambda: on_click('uninstall', service_name))
+        start_service.triggered.connect(lambda: on_click(row, 'start', service_name))
+        stop_service.triggered.connect(lambda: on_click(row, 'stop', service_name))
+        restart_service.triggered.connect(lambda: on_click(row, 'restart', service_name))
+        service_log.triggered.connect(lambda: on_click(row, 'log', service_log_address))
+        service_start_auto.triggered.connect(lambda: on_click(row, 'auto_start', service_name))
+        service_start_demand.triggered.connect(lambda: on_click(row, 'auto_demand', service_name))
+        service_disable.triggered.connect(lambda: on_click(row, 'disable', service_name))
+        service_setup.triggered.connect(lambda: on_click(row, 'setup', service_setup_address, service_name))
+        service_delete.triggered.connect(lambda: on_click(row, 'uninstall', service_name))
 
-        def on_click(action, mes, param):
+        def on_click(row, action, mes, param=None):
+
+            result = None
 
             if action == 'start' or action == 'stop':
-                result = self.system_svc.service_state_operate(mes, action)
+                step = self.system_svc.service_state_operate(mes, action)
+                if step != 'uninstalled' and step != 'active' and step != 'inactive':
+                    time.sleep(0.5)
+                    result = self.system_svc.get_service_state(mes)
+                else:
+                    result = step
             elif action == 'restart':
-                result = self.system_svc.restart_service(mes)
+                step = self.system_svc.restart_service(mes)
+                if step != 'uninstalled':
+                    time.sleep(0.5)
+                    result = self.system_svc.get_service_state(mes)
+                else:
+                    result = step
             elif action == 'log':
                 result = self.system_svc.open_log(mes)
             elif action == 'auto_start' or action == 'auto_demand' or action == 'disable':
@@ -142,12 +149,30 @@ class service_manamgement(QWidget):
             elif action == 'uninstall':
                 result = self.system_svc.delete_service(mes)
 
-            if result == None:
-                QMessageBox.information(self, 'result', 'result', QMessageBox.Yes)
-            elif action == 'start' or action == 'stop':
-                QMessageBox.information(self, 'result',
-                                        '{name} {state} {result}'.format(name=mes, state=action, result=result),
-                                        QMessageBox.Yes)
+            self.get_state(row, mes)
+            self.state_pic.deleteLater()
+            self.state_label.deleteLater()
+
+            if result == 'uninstalled':
+                QMessageBox.about(self, 'Error', 'Service uninstalled')
+            else:
+                if action == 'log' or action == 'auto_start' or action == 'setup':
+                    QMessageBox.about(self, 'result', 'Executed operation')
+                elif action == 'start' or action == 'stop' or action == 'restart':
+                    if result == 'active' and action == 'start':
+                        QMessageBox.about(self, 'result', '{name} has already started'.format(name=mes))
+                    elif result == 'active' and action == 'stop':
+                        QMessageBox.about(self, 'Error', '{name} stop error'.format(name=mes))
+                    elif result == 'inactive' and action == 'stop':
+                        QMessageBox.about(self, 'result', '{name} has already stopped'.format(name=mes))
+                    elif result == 'inactive' and action == 'start':
+                        QMessageBox.about(self, 'Error', '{name} start error'.format(name=mes))
+                    elif result == 'success' or result == 'error':
+                        QMessageBox.about(self, 'result',
+                                          '{name} {state} {result}'.format(name=mes, state=action, result=result))
+                elif action == 'delete':
+                    QMessageBox.about(self, 'result',
+                                      '{name} {state} {result}'.format(name=mes, state=action, result=result))
 
     def get_state(self, row, service_name):
 
@@ -216,12 +241,11 @@ class service_manamgement(QWidget):
             elif result == 'active' or result == 'inactive':
                 already_count += 1
 
-        QMessageBox.information(self, 'result',
-                                '{success_count}/{totality_count} have successful {state}\n'
-                                '{uninstall_count}/{totality_count} uninstalled\n'
-                                '{error_count}/{totality_count} {state} error\n'
-                                '{already_count}/{totality_count} already {state}'.format(
-                                    success_count=success_count, uninstall_count=uninstall_count,
-                                    error_count=error_count, already_count=already_count,
-                                    totality_count=totality_count, state=state),
-                                QMessageBox.Yes)
+        QMessageBox.about(self, 'result',
+                          '{success_count}/{totality_count} have successful {state}\n'
+                          '{uninstall_count}/{totality_count} uninstalled\n'
+                          '{error_count}/{totality_count} {state} error\n'
+                          '{already_count}/{totality_count} already {state}'.format(
+                              success_count=success_count, uninstall_count=uninstall_count,
+                              error_count=error_count, already_count=already_count,
+                              totality_count=totality_count, state=state))
