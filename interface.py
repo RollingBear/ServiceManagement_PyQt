@@ -19,6 +19,11 @@ from PyQt5.QtCore import Qt
 class service_manamgement(QWidget):
 
     def __init__(self):
+
+        '''
+        Initialization the service management
+        '''
+
         super().__init__()
 
         self.conf = config.config('\\config\\config.ini')
@@ -37,6 +42,11 @@ class service_manamgement(QWidget):
         self.init_ui()
 
     def init_ui(self):
+
+        '''
+        Initialization the service management UI
+        :return: None
+        '''
 
         self.grid = QGridLayout()
         self.setLayout(self.grid)
@@ -76,6 +86,16 @@ class service_manamgement(QWidget):
         self.show()
 
     def paint_tool_button(self, row, service_display_name, service_name, service_log_address, service_setup_address):
+
+        '''
+        Packaging the tool button paint to reduce code quantity
+        :param row: the number of rows in which the button is located
+        :param service_display_name: the service's name which to display
+        :param service_name: service's name
+        :param service_log_address: the address of the log file for the service
+        :param service_setup_address: the address of the installation document for the service
+        :return: None
+        '''
 
         self.tool_button = QToolButton(self)
         self.tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -124,6 +144,15 @@ class service_manamgement(QWidget):
 
         def on_click(row, action, mes, param=None):
 
+            '''
+            Button click event control
+            :param row: the number of rows in which the button is located
+            :param action: set tool button event name
+            :param mes: param of event
+            :param param: param of event
+            :return:
+            '''
+
             result = None
 
             if action == 'start' or action == 'stop':
@@ -149,9 +178,9 @@ class service_manamgement(QWidget):
             elif action == 'uninstall':
                 result = self.system_svc.delete_service(mes)
 
-            self.get_state(row, mes)
             self.state_pic.deleteLater()
             self.state_label.deleteLater()
+            self.get_state(row, mes)
 
             if result == 'uninstalled':
                 QMessageBox.about(self, 'Error', 'Service uninstalled')
@@ -176,6 +205,13 @@ class service_manamgement(QWidget):
 
     def get_state(self, row, service_name):
 
+        '''
+        Get service's state
+        :param row: the number of rows in which the message is located
+        :param service_name: service's name
+        :return: None
+        '''
+
         state = self.system_svc.get_service_state(service_name)
         mes = 'Initialization'
         pic = self.red_img
@@ -199,6 +235,17 @@ class service_manamgement(QWidget):
 
     def paint_button(self, btn_name, row, column, function, *args, **kwargs):
 
+        '''
+        Packaging the button paint to reduce code quantity
+        :param btn_name: button's name
+        :param row: the number of rows in which the button is located
+        :param column: the number of columns in which the button is location
+        :param function: the function which linked to the button
+        :param args: button-linked-function's params
+        :param kwargs: button-linked-function's params
+        :return: None
+        '''
+
         button = QPushButton(btn_name, self)
         button.setCheckable(False)
         self.grid.addWidget(button, row, column)
@@ -206,12 +253,25 @@ class service_manamgement(QWidget):
         button.clicked.connect(lambda: function(*args, **kwargs))
 
     def center(self):
+
+        '''
+        Set the window center of screen
+        :return: None
+        '''
+
         geomotry = self.frameGeometry()
         center_point = QDesktopWidget().availableGeometry().center()
         geomotry.moveCenter(center_point)
         self.move(geomotry.topLeft())
 
     def closeEvent(self, QCloseEvent):
+
+        '''
+        Show a message box when close the window
+        :param QCloseEvent:
+        :return: None
+        '''
+
         reply = QMessageBox.question(self, 'Message', 'Are you sure to quit?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
@@ -222,14 +282,18 @@ class service_manamgement(QWidget):
 
     def state_operate(self, state):
 
+        '''
+        The function which used to link to the button
+        :param state: use to distinction different operate
+        :return: None
+        '''
+
         success_count = 0
         uninstall_count = 0
         error_count = 0
         already_count = 0
 
-        totality_count = self.service_list.outer_element_count()
-
-        for i in range(totality_count):
+        for i in range(self.len_count):
             result = self.system_svc.service_state_operate(self.service_list.get('service_' + str(i + 1)).service_name,
                                                            state)
             if result == 'success':
@@ -241,6 +305,8 @@ class service_manamgement(QWidget):
             elif result == 'active' or result == 'inactive':
                 already_count += 1
 
+            self.get_state(i, self.service_list.get('service_' + str(i + 1)).service_name)
+
         QMessageBox.about(self, 'result',
                           '{success_count}/{totality_count} have successful {state}\n'
                           '{uninstall_count}/{totality_count} uninstalled\n'
@@ -248,4 +314,4 @@ class service_manamgement(QWidget):
                           '{already_count}/{totality_count} already {state}'.format(
                               success_count=success_count, uninstall_count=uninstall_count,
                               error_count=error_count, already_count=already_count,
-                              totality_count=totality_count, state=state))
+                              totality_count=self.len_count, state=state))

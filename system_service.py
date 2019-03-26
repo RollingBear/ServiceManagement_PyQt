@@ -6,6 +6,8 @@ __author__ = 'RollingBear'
 
 import os
 import time
+import logging
+import traceback
 
 
 class system_service():
@@ -21,14 +23,17 @@ class system_service():
         :return: service state(str)
         '''
 
-        result = os.popen('sc query ' + service_name).read()
+        try:
+            result = os.popen('sc query ' + service_name).read()
 
-        if 'RUNNING' in result or "START_PENDING" in result:
-            return 'active'
-        elif 'STOPPED' in result or 'STOP_PENDING' in result:
-            return 'inactive'
-        elif '1060' in result:
-            return 'uninstalled'
+            if 'RUNNING' in result or "START_PENDING" in result:
+                return 'active'
+            elif 'STOPPED' in result or 'STOP_PENDING' in result:
+                return 'inactive'
+            elif '1060' in result:
+                return 'uninstalled'
+        except Exception:
+            logging.info(traceback.format_exc())
 
     def service_state_operate(self, service_name, state):
 
@@ -39,18 +44,21 @@ class system_service():
         :return: service start or stop result
         '''
 
-        result = os.popen('sc ' + state + ' ' + service_name).read()
+        try:
+            result = os.popen('sc ' + state + ' ' + service_name).read()
 
-        if '1058' in result:
-            return 'error'
-        elif '1060' in result:
-            return 'uninstalled'
-        elif '1056' in result:
-            return 'active'
-        elif '1062' in result:
-            return 'inactive'
-        elif 'START_PENDING' in result or 'STOP_PENDING' in result:
-            return 'success'
+            if '1058' in result:
+                return 'error'
+            elif '1060' in result:
+                return 'uninstalled'
+            elif '1056' in result:
+                return 'active'
+            elif '1062' in result:
+                return 'inactive'
+            elif 'START_PENDING' in result or 'STOP_PENDING' in result:
+                return 'success'
+        except Exception:
+            logging.info(traceback.format_exc())
 
     def restart_service(self, service_name):
 
@@ -60,17 +68,23 @@ class system_service():
         :return: service restart result
         '''
 
-        result_stop = self.stop_service(service_name)
-        time.sleep(1)
-        result_start = self.start_service(service_name)
+        try:
+            result_stop = self.stop_service(service_name)
+            time.sleep(1)
+            try:
+                result_start = self.start_service(service_name)
+            except Exception:
+                logging.info(traceback.format_exc())
 
-        if (result_stop == 'success' and result_start == 'success') or (
-                result_stop == 'inactive' and result_start == 'success'):
-            return 'success'
-        elif result_stop == 'uninstalled' or result_start == 'uninstalled':
-            return 'uninstalled'
-        elif result_stop == 'error' or result_start == 'error':
-            return 'error'
+            if (result_stop == 'success' and result_start == 'success') or (
+                    result_stop == 'inactive' and result_start == 'success'):
+                return 'success'
+            elif result_stop == 'uninstalled' or result_start == 'uninstalled':
+                return 'uninstalled'
+            elif result_stop == 'error' or result_start == 'error':
+                return 'error'
+        except Exception:
+            logging.info(traceback.format_exc())
 
     def auto_start_service(self, service_name, state):
 
@@ -81,8 +95,11 @@ class system_service():
         :return: Null
         '''
 
-        os.popen('sc config ' + service_name + 'state= ' + state)
-        return None
+        try:
+            os.popen('sc config ' + service_name + 'state= ' + state)
+            return None
+        except Exception:
+            logging.info(traceback.format_exc())
 
     def delete_service(self, service_name):
 
@@ -92,17 +109,23 @@ class system_service():
         :return: delete result
         '''
 
-        result_stop = self.stop_service(service_name)
-        time.sleep(1)
-        result_delete = os.popen('sc delete ' + service_name).read()
+        try:
+            result_stop = self.stop_service(service_name)
+            time.sleep(1)
+            try:
+                result_delete = os.popen('sc delete ' + service_name).read()
+            except Exception:
+                logging.info(traceback.format_exc())
 
-        if (result_stop == 'success' and '成功' in result_delete) or (
-                result_stop == 'inactive' and '成功' in result_delete):
-            return 'success'
-        elif result_stop == 'uninstalled':
-            return 'success'
-        elif result_stop == 'error' and '成功' not in result_delete:
-            return 'error'
+            if (result_stop == 'success' and '成功' in result_delete) or (
+                    result_stop == 'inactive' and '成功' in result_delete):
+                return 'success'
+            elif result_stop == 'uninstalled':
+                return 'success'
+            elif result_stop == 'error' and '成功' not in result_delete:
+                return 'error'
+        except Exception:
+            logging.info(traceback.format_exc())
 
     def open_log(self, service_log):
 
@@ -112,8 +135,11 @@ class system_service():
         :return: Null
         '''
 
-        os.system('notepad ' + service_log)
-        return None
+        try:
+            os.system('notepad ' + service_log)
+            return None
+        except Exception:
+            logging.info(traceback.format_exc())
 
     # wait to rewrite
     def open_file(self, log_file_address):
@@ -124,8 +150,11 @@ class system_service():
         :return: Null
         '''
 
-        os.popen('start ' + os.path.abspath(log_file_address))
-        return None
+        try:
+            os.popen('start ' + os.path.abspath(log_file_address))
+            return None
+        except Exception:
+            logging.info(traceback.format_exc())
 
     def open_setup(self, service_name, service_setup):
 
@@ -136,5 +165,8 @@ class system_service():
         :return: Null
         '''
 
-        os.popen('sc create ' + service_name + ' binPath= ' + service_setup)
-        return None
+        try:
+            os.popen('sc create ' + service_name + ' binPath= ' + service_setup)
+            return None
+        except Exception:
+            logging.info(traceback.format_exc())

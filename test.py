@@ -25,7 +25,7 @@ import configparser
 # print(1)
 # print(dict)
 
-import config
-
-conf = config.config('\\config\\service_name.ini')
-print(conf.outer_element_count())
+# import config
+#
+# conf = config.config('\\config\\service_name.ini')
+# print(conf.outer_element_count())

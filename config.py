@@ -50,7 +50,6 @@ class Dictionary(dict):
 class config(object):
     '''
     the secondary encapsulation of the config parse, get value with key from the dictionary
-
     when the class init, need a parameter: the address of ini configuration file
     '''
 
@@ -85,7 +84,7 @@ class config(object):
         except Exception:
             logging.info(traceback.format_exc())
 
-        '''with section write the key and the value into dictionary'''
+        '''with section write the key and value into dictionary'''
         for section in self.config.sections():
             try:
                 setattr(self, section, Dictionary())
